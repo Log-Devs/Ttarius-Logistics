@@ -1,39 +1,137 @@
 /**
  * AuthCallback Component
  * 
- * Handles OAuth callback from Google authentication
- * Processes the session and redirects user to dashboard
+ * Handles both OAuth callback and Password Recovery callback from Supabase
  * 
- * Flow:
- * 1. User clicks "Sign in with Google"
- * 2. Redirected to Google OAuth
- * 3. Google redirects back to /auth/callback
- * 4. This component processes the session
- * 5. Updates Redux store with user data
- * 6. Redirects to dashboard
+ * FLOWS HANDLED:
+ * 1. OAuth (Google Sign-in):
+ *    - User clicks "Sign in with Google"
+ *    - Redirected to Google OAuth
+ *    - Google redirects back to /auth/callback
+ *    - Session is established, redirect to dashboard
+ * 
+ * 2. Password Recovery:
+ *    - User requests password reset email
+ *    - Clicks link in email → /auth/callback#type=recovery&access_token=xxx
+ *    - Exchange token for session
+ *    - Redirect to /forgot-password?step=3 to set new password
  */
 
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Loader2, AlertCircle, KeyRound } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAppDispatch } from '../store/hooks';
 import { initializeAuth } from '../store/slices/authSlice';
 
+type CallbackType = 'oauth' | 'recovery' | 'unknown';
+
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<string>('Processing authentication...');
+  const [status, setStatus] = useState<string>('Processing...');
+  const [callbackType, setCallbackType] = useState<CallbackType>('unknown');
 
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
+        console.log('🔍 AuthCallback processing, hash:', location.hash);
+
+        // Parse the URL hash to determine callback type
+        const hashParams = new URLSearchParams(location.hash.substring(1));
+        const type = hashParams.get('type');
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        const errorDescription = hashParams.get('error_description');
+
+        console.log('🔍 Parsed params:', { type, hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken });
+
+        // Check for error in URL params (e.g., expired link)
+        if (errorDescription) {
+          console.error('❌ Auth error from URL:', errorDescription);
+          setError(errorDescription);
+          setTimeout(() => navigate('/login'), 3000);
+          return;
+        }
+
+        // Handle Password Recovery Flow
+        if (type === 'recovery') {
+          setCallbackType('recovery');
+          setStatus('Processing password reset...');
+
+          console.log('🔐 Password recovery callback detected');
+
+          // For recovery, we need to exchange the tokens
+          if (accessToken && refreshToken) {
+            console.log('🔐 Exchanging recovery tokens for session...');
+
+            // Set the session using the tokens from the URL
+            const { data, error: setSessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+
+            if (setSessionError) {
+              console.error('❌ Failed to set recovery session:', setSessionError);
+              setError('Password reset link has expired or is invalid. Please request a new one.');
+              setTimeout(() => navigate('/forgot-password'), 3000);
+              return;
+            }
+
+            if (data?.session) {
+              console.log('✅ Recovery session established for:', data.session.user.email);
+              setStatus('Redirecting to password reset...');
+
+              // Redirect to the new password step
+              await new Promise(resolve => setTimeout(resolve, 500));
+              navigate('/forgot-password?step=3', { replace: true });
+              return;
+            }
+          }
+
+          // If tokens weren't in hash, try to get existing session
+          // (Supabase might have handled the hash automatically via detectSessionInUrl)
+          const { data: { session: existingSession } } = await supabase.auth.getSession();
+
+          if (existingSession) {
+            console.log('✅ Found existing session for recovery:', existingSession.user.email);
+            setStatus('Redirecting to password reset...');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            navigate('/forgot-password?step=3', { replace: true });
+            return;
+          }
+
+          // No session found for recovery
+          console.warn('⚠️ No session found for password recovery');
+          setError('Password reset link has expired or is invalid. Please request a new one.');
+          setTimeout(() => navigate('/forgot-password'), 3000);
+          return;
+        }
+
+        // Default: OAuth callback (Google, etc.) or email verification
+        setCallbackType('oauth');
         setStatus('Verifying your credentials...');
 
-        // Get the session from Supabase
-        // This automatically processes the OAuth callback from the URL hash/query params
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        // First, try to get session (detectSessionInUrl should have handled the hash)
+        let { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        // If no session and we have tokens, try to set them explicitly
+        if (!session && accessToken && refreshToken) {
+          console.log('🔍 No session found, attempting to set session from tokens...');
+          const { data, error: setSessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (!setSessionError && data?.session) {
+            session = data.session;
+            sessionError = null;
+          } else {
+            sessionError = setSessionError;
+          }
+        }
 
         if (sessionError) {
           console.error('❌ Session error:', sessionError);
@@ -57,7 +155,6 @@ export default function AuthCallback() {
         setStatus('Loading your profile...');
 
         // Initialize auth state in Redux
-        // This will fetch the user profile and update the store
         await dispatch(initializeAuth()).unwrap();
 
         setStatus('Success! Redirecting to dashboard...');
@@ -71,8 +168,8 @@ export default function AuthCallback() {
       } catch (err) {
         console.error('❌ Auth callback error:', err);
         setError(
-          err instanceof Error 
-            ? err.message 
+          err instanceof Error
+            ? err.message
             : 'Authentication failed. Please try again.'
         );
         setTimeout(() => navigate('/login'), 3000);
@@ -80,7 +177,7 @@ export default function AuthCallback() {
     };
 
     handleAuthCallback();
-  }, [navigate, dispatch]);
+  }, [navigate, dispatch, location.hash]);
 
   if (error) {
     return (
@@ -90,13 +187,13 @@ export default function AuthCallback() {
             <AlertCircle className="h-8 w-8 text-red-600" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Authentication Error
+            {callbackType === 'recovery' ? 'Password Reset Error' : 'Authentication Error'}
           </h2>
           <p className="text-gray-600 mb-4">
             {error}
           </p>
           <p className="text-sm text-gray-500">
-            Redirecting you back to login...
+            Redirecting you {callbackType === 'recovery' ? 'to reset password page' : 'back to login'}...
           </p>
         </div>
       </div>
@@ -107,10 +204,14 @@ export default function AuthCallback() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-gray-50 px-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
         <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Loader2 className="h-8 w-8 text-red-600 animate-spin" />
+          {callbackType === 'recovery' ? (
+            <KeyRound className="h-8 w-8 text-red-600" />
+          ) : (
+            <Loader2 className="h-8 w-8 text-red-600 animate-spin" />
+          )}
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Completing Sign In
+          {callbackType === 'recovery' ? 'Password Reset' : 'Completing Sign In'}
         </h2>
         <p className="text-gray-600 mb-4">
           {status}

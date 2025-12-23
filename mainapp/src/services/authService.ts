@@ -51,28 +51,28 @@ class AuthService {
   private async cleanupOrphanedAuthUser(email: string): Promise<boolean> {
     try {
       console.log('🔍 Checking for orphaned auth user:', email);
-      
+
       // Check if profile exists
       const { data: existingProfile, error: _profileError } = await supabase
         .from('users')
         .select('id, email')
         .eq('email', email.toLowerCase())
         .maybeSingle();
-      
+
       // If profile exists, no cleanup needed
       if (existingProfile) {
         console.log('✅ Profile exists, no cleanup needed');
         return false;
       }
-      
+
       // Profile doesn't exist - check if auth user exists
       // We can't directly query auth.users, but we can try to sign in
       // to detect if auth user exists without profile
       console.warn('⚠️ Auth user may exist without profile - this is an orphaned user');
       console.log('💡 User should use a different email or contact support to clean up');
-      
+
       return false; // We can't auto-cleanup due to security - needs admin intervention
-      
+
     } catch (err) {
       console.error('Error checking for orphaned user:', err);
       return false;
@@ -83,7 +83,7 @@ class AuthService {
     try {
       // STEP 0: Check for orphaned auth users before attempting registration
       await this.cleanupOrphanedAuthUser(data.email);
-      
+
       // Step 1: Create auth user with metadata
       const signupPayload = {
         email: data.email,
@@ -107,11 +107,11 @@ class AuthService {
       }
 
       const { data: authData, error } = await supabase.auth.signUp(signupPayload as any);
-  
+
       if (error || !authData.user) {
         return { user: null, error };
       }
-      
+
       // Step 2: Create user profile using secure RPC function
       try {
         const rpcPayload = {
@@ -139,43 +139,43 @@ class AuthService {
         }
 
         if (rpcError) {
-          return { 
-            user: null, 
-            error: { 
+          return {
+            user: null,
+            error: {
               message: `Registration failed: ${rpcError.message}`,
               name: 'ProfileCreationError'
-            } as AuthError 
+            } as AuthError
           };
         }
 
         if (!profileResult?.success) {
-          return { 
-            user: null, 
-            error: { 
+          return {
+            user: null,
+            error: {
               message: `Registration failed: ${profileResult?.error || 'Unknown error'}`,
               name: 'ProfileCreationError'
-            } as AuthError 
+            } as AuthError
           };
         }
 
         return { user: authData.user, error: null };
 
       } catch (profileError) {
-        return { 
-          user: null, 
-          error: { 
+        return {
+          user: null,
+          error: {
             message: 'Registration failed during profile creation',
             name: 'ProfileCreationError'
-          } as AuthError 
+          } as AuthError
         };
       }
     } catch (err) {
-      return { 
-        user: null, 
-        error: { 
+      return {
+        user: null,
+        error: {
           message: 'Registration failed',
           name: 'RegistrationError'
-        } as AuthError 
+        } as AuthError
       };
     }
   }
@@ -240,12 +240,12 @@ class AuthService {
         p_error_message: 'Unexpected error during login'
       });
 
-      return { 
-        user: null, 
-        error: { 
+      return {
+        user: null,
+        error: {
           message: 'Sign in failed',
           name: 'SignInError'
-        } as AuthError 
+        } as AuthError
       };
     }
   }
@@ -261,7 +261,7 @@ class AuthService {
     try {
       // Check if user profile already exists
       let profile = await this.getUserProfile(user.id);
-      
+
       if (profile) {
         // Profile exists, return it
         console.log('✅ OAuth user profile found:', profile);
@@ -270,12 +270,12 @@ class AuthService {
 
       // Profile doesn't exist, create it using OAuth metadata
       console.log('📝 Creating profile for OAuth user:', user.email);
-      
+
       // Extract user metadata from OAuth provider
       const metadata = user.user_metadata || {};
       const firstName = metadata.first_name || metadata.given_name || metadata.name?.split(' ')[0] || 'User';
       const lastName = metadata.last_name || metadata.family_name || metadata.name?.split(' ').slice(1).join(' ') || '';
-      
+
       try {
         // Create user profile using RPC function
         const { data: profileResult, error: rpcError } = await supabase.rpc('create_user_profile_secure', {
@@ -292,36 +292,36 @@ class AuthService {
 
         if (rpcError) {
           console.error('❌ Failed to create OAuth user profile:', rpcError);
-          return { 
-            profile: null, 
-            error: { 
+          return {
+            profile: null,
+            error: {
               message: `Failed to create user profile: ${rpcError.message}`,
               name: 'ProfileCreationError'
-            } as AuthError 
+            } as AuthError
           };
         }
 
         if (!profileResult?.success) {
           console.error('❌ OAuth profile creation returned error:', profileResult?.error);
-          return { 
-            profile: null, 
-            error: { 
+          return {
+            profile: null,
+            error: {
               message: `Failed to create user profile: ${profileResult?.error || 'Unknown error'}`,
               name: 'ProfileCreationError'
-            } as AuthError 
+            } as AuthError
           };
         }
 
         // Fetch the newly created profile
         profile = await this.getUserProfile(user.id);
-        
+
         if (!profile) {
-          return { 
-            profile: null, 
-            error: { 
+          return {
+            profile: null,
+            error: {
               message: 'Profile created but could not be retrieved',
               name: 'ProfileRetrievalError'
-            } as AuthError 
+            } as AuthError
           };
         }
 
@@ -330,22 +330,22 @@ class AuthService {
 
       } catch (profileError) {
         console.error('❌ Error creating OAuth user profile:', profileError);
-        return { 
-          profile: null, 
-          error: { 
+        return {
+          profile: null,
+          error: {
             message: 'Failed to create user profile',
             name: 'ProfileCreationError'
-          } as AuthError 
+          } as AuthError
         };
       }
     } catch (err) {
       console.error('❌ Error handling OAuth sign-in:', err);
-      return { 
-        profile: null, 
-        error: { 
+      return {
+        profile: null,
+        error: {
           message: 'OAuth sign-in handling failed',
           name: 'OAuthError'
-        } as AuthError 
+        } as AuthError
       };
     }
   }
@@ -354,10 +354,10 @@ class AuthService {
     try {
       // Get current user before signing out for logging
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       // Sign out immediately (don't wait for logging)
       const { error } = await supabase.auth.signOut();
-      
+
       // Log logout event in background (non-blocking)
       if (user) {
         this.logAuthEventAsync('logout', {
@@ -372,14 +372,14 @@ class AuthService {
           p_error_message: null
         });
       }
-      
+
       return { error };
     } catch (err) {
-      return { 
-        error: { 
+      return {
+        error: {
           message: 'Sign out failed',
           name: 'SignOutError'
-        } as AuthError 
+        } as AuthError
       };
     }
   }
@@ -423,11 +423,11 @@ class AuthService {
         `)
         .eq('id', userId)
         .single();
-  
+
       if (error || !data) {
         return null;
       }
-  
+
       return {
         id: data.id,
         email: data.email,
@@ -492,15 +492,15 @@ class AuthService {
   async updateUserProfile(userId: string, updates: Partial<AuthUser>): Promise<{ error: AuthError | null; success?: boolean }> {
     try {
       const dbUpdates: Record<string, any> = {};
-      
+
       if (updates.firstName) dbUpdates.first_name = updates.firstName;
       if (updates.lastName) dbUpdates.last_name = updates.lastName;
       if (updates.phone) dbUpdates.phone_number = updates.phone;
-  // Note: allow clearing fields by passing empty string or null/undefined
-  if (updates.streetAddress !== undefined) dbUpdates.street_address = updates.streetAddress || null;
-  if (updates.city !== undefined) dbUpdates.city = updates.city || null;
-  if (updates.country !== undefined) dbUpdates.country = updates.country || null;
-  if (updates.postalCode !== undefined) dbUpdates.postal_code = updates.postalCode || null;
+      // Note: allow clearing fields by passing empty string or null/undefined
+      if (updates.streetAddress !== undefined) dbUpdates.street_address = updates.streetAddress || null;
+      if (updates.city !== undefined) dbUpdates.city = updates.city || null;
+      if (updates.country !== undefined) dbUpdates.country = updates.country || null;
+      if (updates.postalCode !== undefined) dbUpdates.postal_code = updates.postalCode || null;
       if (updates.avatarUrl) dbUpdates.avatar_url = updates.avatarUrl;
       if (updates.profileImage !== undefined) dbUpdates.avatar_url = updates.profileImage;
 
@@ -510,8 +510,8 @@ class AuthService {
         .eq('id', userId);
 
       if (error) {
-        return { 
-          error: { 
+        return {
+          error: {
             message: error.message,
             name: 'ProfileUpdateError'
           } as AuthError,
@@ -521,8 +521,8 @@ class AuthService {
 
       return { error: null, success: true };
     } catch (err) {
-      return { 
-        error: { 
+      return {
+        error: {
           message: 'Profile update failed',
           name: 'ProfileUpdateError'
         } as AuthError,
@@ -533,14 +533,20 @@ class AuthService {
 
   async resetPassword(email: string): Promise<{ error: AuthError | null }> {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      // Build the redirect URL for password recovery
+      // This should point to /auth/callback where we handle the recovery token
+      const redirectUrl = `${window.location.origin}/auth/callback`;
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      });
       return { error };
     } catch (err) {
-      return { 
-        error: { 
+      return {
+        error: {
           message: 'Password reset failed',
           name: 'PasswordResetError'
-        } as AuthError 
+        } as AuthError
       };
     }
   }
@@ -550,11 +556,11 @@ class AuthService {
       const { error } = await supabase.auth.updateUser({ password });
       return { error };
     } catch (err) {
-      return { 
-        error: { 
+      return {
+        error: {
           message: 'Password update failed',
           name: 'PasswordUpdateError'
-        } as AuthError 
+        } as AuthError
       };
     }
   }
@@ -565,11 +571,11 @@ class AuthService {
         type: 'signup',
         email: email,
       });
-      
+
       if (error) {
         return { error: error.message };
       }
-      
+
       return { error: null };
     } catch (err) {
       return { error: 'Failed to resend verification email' };
@@ -700,9 +706,9 @@ class AuthService {
    * @param {string} email - User email to check
    * @returns {Promise<{ status: string; canLogin: boolean; message?: string }>}
    */
-  async checkAccountStatus(email: string): Promise<{ 
-    status: string | null; 
-    canLogin: boolean; 
+  async checkAccountStatus(email: string): Promise<{
+    status: string | null;
+    canLogin: boolean;
     message?: string;
     firstName?: string;
   }> {
@@ -721,16 +727,16 @@ class AuthService {
         if (process.env.NODE_ENV === 'development') {
           console.warn('Pre-login status check failed (non-critical):', error.message);
         }
-        return { 
-          status: null, 
+        return {
+          status: null,
           canLogin: true  // Let auth handle it
         };
       }
 
       // If no user found, allow to proceed (will fail at auth step with proper error)
       if (!userData) {
-        return { 
-          status: null, 
+        return {
+          status: null,
           canLogin: true  // Let auth handle invalid email
         };
       }
@@ -740,10 +746,10 @@ class AuthService {
 
       // Check if account is active
       if (accountStatus === 'active') {
-        return { 
-          status: accountStatus, 
+        return {
+          status: accountStatus,
           canLogin: true,
-          firstName 
+          firstName
         };
       }
 
@@ -766,18 +772,18 @@ class AuthService {
           message = `Hi${firstName ? ' ' + firstName : ''}, your account status does not allow login at this time. Please contact support@vanguardcargo.co for assistance.`;
       }
 
-      return { 
-        status: accountStatus, 
-        canLogin: false, 
+      return {
+        status: accountStatus,
+        canLogin: false,
         message,
-        firstName 
+        firstName
       };
     } catch (err) {
       console.error('Error checking account status:', err);
       // On error, allow to proceed (will fail at auth with proper error)
-      return { 
-        status: null, 
-        canLogin: true 
+      return {
+        status: null,
+        canLogin: true
       };
     }
   }

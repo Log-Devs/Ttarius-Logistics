@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shield, CheckCircle2, AlertCircle } from 'lucide-react';
+import { MdOutlineLockPerson } from 'react-icons/md';
 import { authService } from '../../services/authService';
 import { useReduxAuth as useAuth } from '../../hooks/useReduxAuth';
 
@@ -9,7 +9,7 @@ import { useReduxAuth as useAuth } from '../../hooks/useReduxAuth';
  * Professional security settings page with password management
  * Features: Password change, strength indicator, reset options, security tips
  * 
- * @author Senior Software Engineer
+ * Design: Matches the styling pattern of other settings components
  */
 function SecuritySettings() {
   const { user } = useAuth();
@@ -20,7 +20,6 @@ function SecuritySettings() {
     newPassword: '',
     confirmPassword: ''
   });
-  
   // UI state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -157,48 +156,32 @@ function SecuritySettings() {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-      {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2 bg-red-100 rounded-lg">
-            <Shield className="w-6 h-6 sm:w-7 sm:h-7 text-red-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Security Settings</h1>
-          </div>
-        </div>
-        <p className="text-sm sm:text-base text-gray-600 ml-14">
-          Manage your account security and password settings
-        </p>
+    <div>
+      {/* Header - matches NotificationSettings and PreferencesSettings style */}
+      <div className="flex items-center gap-3 mb-6">
+        <MdOutlineLockPerson className="text-xl" />
+        <h2 className="text-lg font-semibold">Security Settings</h2>
       </div>
       
       {/* Error Alert */}
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg flex items-start gap-3 animate-[slideDown_0.3s_ease-out]">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-red-900">Error</p>
-            <p className="text-sm text-red-700 mt-1">{error}</p>
-          </div>
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-800 text-sm">{error}</p>
         </div>
       )}
 
       {/* Success Alert */}
       {successMessage && (
-        <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-r-lg flex items-start gap-3 animate-[slideDown_0.3s_ease-out]">
-          <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-green-900">Success</p>
-            <p className="text-sm text-green-700 mt-1">{successMessage}</p>
-          </div>
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-green-800 text-sm">{successMessage}</p>
         </div>
       )}
       
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Current Password */}
         <div>
-          <label htmlFor="currentPassword" className="block text-md font-semibold mb-2">
-            Current Password
+          <label htmlFor="currentPassword" className="block text-sm font-semibold text-gray-700 mb-2">
+            Current Password <span className="text-red-500">*</span>
           </label>
           <input
             type="password"
@@ -207,14 +190,15 @@ function SecuritySettings() {
             value={passwords.currentPassword}
             onChange={handlePasswordChange}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
             placeholder="Enter current password"
           />
         </div>
 
+        {/* New Password */}
         <div>
-          <label htmlFor="newPassword" className="block text-md font-semibold mb-2">
-            New Password
+          <label htmlFor="newPassword" className="block text-sm font-semibold text-gray-700 mb-2">
+            New Password <span className="text-red-500">*</span>
           </label>
           <input
             type="password"
@@ -223,8 +207,8 @@ function SecuritySettings() {
             value={passwords.newPassword}
             onChange={handlePasswordChange}
             required
-            minLength={8}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors"
+            minLength={6}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
             placeholder="Enter new password"
           />
           {passwords.newPassword && (
@@ -254,9 +238,10 @@ function SecuritySettings() {
           </p>
         </div>
 
+        {/* Confirm Password */}
         <div>
-          <label htmlFor="confirmPassword" className="block text-md font-semibold mb-2">
-            Confirm New Password
+          <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-2">
+            Confirm New Password <span className="text-red-500">*</span>
           </label>
           <input
             type="password"
@@ -265,11 +250,11 @@ function SecuritySettings() {
             value={passwords.confirmPassword}
             onChange={handlePasswordChange}
             required
-            minLength={8}
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-colors ${
+            minLength={6}
+            className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all ${
               passwords.confirmPassword && passwords.newPassword && passwords.confirmPassword !== passwords.newPassword
-                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                : 'border-gray-300 focus:ring-red-500 focus:border-red-500'
+                ? 'border-red-500 focus:ring-red-500' 
+                : 'border-gray-300 focus:ring-red-500 focus:border-transparent'
             }`}
             placeholder="Confirm new password"
           />
@@ -286,19 +271,20 @@ function SecuritySettings() {
           )}
         </div>
 
+        {/* Submit Button */}
         <button
           type="submit"
           disabled={loading || (!!passwords.newPassword && !!passwords.confirmPassword && passwords.newPassword !== passwords.confirmPassword)}
-          className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md hover:shadow-lg"
+          className="px-6 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Changing Password...' : 'Change Password'}
         </button>
       </form>
 
-      {/* Alternative: Password Reset */}
-      <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-        <h3 className="font-semibold text-red-900 mb-2">Forgot Your Current Password?</h3>
-        <p className="text-sm text-red-700 mb-4">
+      {/* Password Reset Option */}
+      <div className="mt-8 pt-6 border-t border-gray-200">
+        <h3 className="text-base font-medium text-gray-900 mb-2">Forgot Your Current Password?</h3>
+        <p className="text-sm text-gray-500 mb-4">
           If you don't remember your current password, you can reset it via email instead.
         </p>
         {!showResetOption ? (
@@ -310,20 +296,20 @@ function SecuritySettings() {
           </button>
         ) : (
           <div className="space-y-3">
-            <p className="text-sm text-red-700">
+            <p className="text-sm text-gray-600">
               This will send a password reset link to your email: <strong>{user?.email}</strong>
             </p>
             <div className="flex space-x-3">
               <button
                 onClick={handlePasswordReset}
                 disabled={loading}
-                className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors shadow-md hover:shadow-lg"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
                 {loading ? 'Sending...' : 'Send Reset Email'}
               </button>
               <button
                 onClick={() => setShowResetOption(false)}
-                className="bg-white border border-red-300 text-red-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-red-50 transition-colors"
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors"
               >
                 Cancel
               </button>
@@ -333,26 +319,23 @@ function SecuritySettings() {
       </div>
 
       {/* Security Tips */}
-      <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg">
-        <h3 className="font-semibold text-red-900 mb-2 flex items-center">
-          <Shield className="w-5 h-5 mr-2 text-red-600" />
-          Security Tips
-        </h3>
-        <ul className="text-sm text-red-800 space-y-2">
+      <div className="mt-8 pt-6 border-t border-gray-200">
+        <h3 className="text-base font-medium text-gray-900 mb-4">Security Tips</h3>
+        <ul className="text-sm text-gray-600 space-y-2">
           <li className="flex items-start">
-            <span className="inline-block w-2 h-2 bg-red-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+            <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
             Use a unique password that you don't use on other websites
           </li>
           <li className="flex items-start">
-            <span className="inline-block w-2 h-2 bg-red-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+            <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
             Include uppercase and lowercase letters, numbers, and symbols
           </li>
           <li className="flex items-start">
-            <span className="inline-block w-2 h-2 bg-red-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+            <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
             Avoid using personal information like your name or birthday
           </li>
           <li className="flex items-start">
-            <span className="inline-block w-2 h-2 bg-red-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+            <span className="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 mr-3 flex-shrink-0"></span>
             Consider using a password manager to generate and store strong passwords
           </li>
         </ul>

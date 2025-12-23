@@ -3,7 +3,7 @@
         xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://www.vanguardcargo.co/</loc>
-    <lastmod>2025-11-27</lastmod>
+    <lastmod>2025-12-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
     <image:image>
@@ -14,13 +14,13 @@
   </url>
   <url>
     <loc>https://www.vanguardcargo.co/about</loc>
-    <lastmod>2025-11-27</lastmod>
+    <lastmod>2025-12-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.vanguardcargo.co/services</loc>
-    <lastmod>2025-11-27</lastmod>
+    <lastmod>2025-12-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
@@ -31,7 +31,7 @@
   </url>
   <url>
     <loc>https://www.vanguardcargo.co/contact</loc>
-    <lastmod>2025-11-27</lastmod>
+    <lastmod>2025-12-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     <image:image>
@@ -42,31 +42,31 @@
   </url>
   <url>
     <loc>https://www.vanguardcargo.co/shipping-to-ghana</loc>
-    <lastmod>2025-11-27</lastmod>
+    <lastmod>2025-12-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.vanguardcargo.co/package-forwarding</loc>
-    <lastmod>2025-11-27</lastmod>
+    <lastmod>2025-12-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.vanguardcargo.co/usa-address</loc>
-    <lastmod>2025-11-27</lastmod>
+    <lastmod>2025-12-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.vanguardcargo.co/consolidation-service</loc>
-    <lastmod>2025-11-27</lastmod>
+    <lastmod>2025-12-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.vanguardcargo.co/customs-clearance</loc>
-    <lastmod>2025-11-27</lastmod>
+    <lastmod>2025-12-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
